@@ -27,8 +27,8 @@ contract TokenFactory {
     uint constant MEMETOKEN_CREATION_PLATFORM_FEE = 0.00001 ether; //Note change into 0.1 ether
     uint constant MEMECOIN_FUNDING_GOAL = 0.1 ether; //Note change into 100 ether
 
-    address constant UNISWAP_V2_FACTORY_ADDRESS = 0x8909Dc15e40173Ff4699343b6eB8132c65e18eC6;
-    address constant UNISWAP_V2_ROUTER_ADDRESS = 0x4752ba5dbc23f44d87826276bf6fd6b1c372ad24;
+    address constant UNISWAP_V2_FACTORY_ADDRESS = 0xc35DADB65012eC5796536bD9864eD8773aBc74C4;
+    address constant UNISWAP_V2_ROUTER_ADDRESS = 0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506;
 
 
     uint constant DECIMALS = 10 ** 18;
