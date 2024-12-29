@@ -31,15 +31,16 @@ contract TokenFactory is  Ownable {
     }
     mapping(address => memeToken) public addressToMemeTokenMapping;
 
-    address constant UNISWAP_V2_FACTORY_ADDRESS = 0xF62c03E08ada871A0bEb309762E260a7a6a880E6;
-    address constant UNISWAP_V2_ROUTER_ADDRESS = 0xeE567Fe1712Faf6149d80dA1E6934E354124CfE3;
+    uint constant MEMETOKEN_CREATION_PLATFORM_FEE = 1000;
+    uint constant MEMECOIN_FUNDING_GOAL = 1000000 * DECIMALS;
+
+    address constant UNISWAP_V2_FACTORY_ADDRESS = 0x7E0987E5b3a30e3f2828572Bb659A548460a3003;
+    address constant UNISWAP_V2_ROUTER_ADDRESS = 0xC532a74256D3Db42D0Bf7a0400fEFDbad7694008;
+
 
     uint constant DECIMALS = 10 ** 18;
     uint constant MAX_SUPPLY = 	1000000000 * DECIMALS;
     uint constant INIT_SUPPLY = 20 * MAX_SUPPLY / 100;
-
-    uint constant MEMETOKEN_CREATION_PLATFORM_FEE = 1000;
-    uint constant MEMECOIN_FUNDING_GOAL = 3000000 * DECIMALS;
 
     uint256 public constant INITIAL_PRICE = 5000000000000000;  // Initial price in wei (P0), 3.00 * 10^13
     uint256 public constant K = 8 * 10**15;  // Growth rate (k), scaled to avoid precision loss (0.01 * 10^18)
