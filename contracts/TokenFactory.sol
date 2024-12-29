@@ -1,4 +1,5 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: UNLICENSED
+
 pragma solidity ^0.8.24;
 
 import "./Token.sol";
@@ -6,6 +7,7 @@ import "hardhat/console.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router01.sol";
+
 
 contract TokenFactory {
 
@@ -27,8 +29,8 @@ contract TokenFactory {
     uint constant MEMETOKEN_CREATION_PLATFORM_FEE = 0.00001 ether; //Note change into 0.1 ether
     uint constant MEMECOIN_FUNDING_GOAL = 0.1 ether; //Note change into 100 ether
 
-    address constant UNISWAP_V2_FACTORY_ADDRESS = 0xc35DADB65012eC5796536bD9864eD8773aBc74C4;
-    address constant UNISWAP_V2_ROUTER_ADDRESS = 0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506;
+    address constant UNISWAP_V2_FACTORY_ADDRESS = 0x9fBFa493EC98694256D171171487B9D47D849Ba9;
+    address constant UNISWAP_V2_ROUTER_ADDRESS = 0x5951479fE3235b689E392E9BC6E968CE10637A52;
 
 
     uint constant DECIMALS = 10 ** 18;
@@ -36,7 +38,7 @@ contract TokenFactory {
     uint constant INIT_SUPPLY = 20 * MAX_SUPPLY / 100;
 
     uint256 public constant INITIAL_PRICE = 10000000000;  // Initial price in wei (P0), 1.00 * 10^10 
-    uint256 public constant K = 8 * 10**15;  // Growth rate (k), scaled to avoid precision loss (0.01 * 10^18)
+    uint256 public constant K = 8 * 10**8;  // Growth rate (k), scaled to avoid precision loss (0.01 * 10^18)
 
     // Function to calculate the cost in wei for purchasing `tokensToBuy` starting from `currentSupply`
     function calculateCost(uint256 currentSupply, uint256 tokensToBuy) public pure returns (uint256) {
@@ -168,7 +170,7 @@ contract TokenFactory {
         Token memeTokenCt = Token(memeTokenAddress);
         memeTokenCt.approve(UNISWAP_V2_ROUTER_ADDRESS, tokenAmount);
         IUniswapV2Router01 router = IUniswapV2Router01(UNISWAP_V2_ROUTER_ADDRESS);
-        (uint amountToken, uint amountETH, uint liquidity) = router.addLiquidityETH{
+        (,, uint liquidity) = router.addLiquidityETH{
             value: ethAmount
         }(memeTokenAddress, tokenAmount, tokenAmount, ethAmount, address(this), block.timestamp);
         return liquidity;
@@ -181,6 +183,13 @@ contract TokenFactory {
         return 1;
     }
 
+
+     function withdraw() external {
+        uint256 balance = address(this).balance;
+        require(balance > 0, "No Ether to withdraw");
+        (bool success, ) = payable(msg.sender).call{value: balance}("");
+        require(success, "Withdrawal failed");
+    }
 
 
 }
