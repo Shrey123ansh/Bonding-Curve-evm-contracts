@@ -39,7 +39,7 @@ contract TokenFactory is  Ownable {
     uint constant INIT_SUPPLY = 20 * MAX_SUPPLY / 100;
 
     uint constant MEMETOKEN_CREATION_PLATFORM_FEE = 1000;
-    uint constant MEMECOIN_FUNDING_GOAL = 4000000 * DECIMALS;
+    uint constant MEMECOIN_FUNDING_GOAL = 3000000 * DECIMALS;
 
     uint256 public constant INITIAL_PRICE = 5000000000000000;  // Initial price in wei (P0), 3.00 * 10^13
     uint256 public constant K = 8 * 10**15;  // Growth rate (k), scaled to avoid precision loss (0.01 * 10^18)
