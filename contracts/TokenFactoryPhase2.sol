@@ -82,7 +82,7 @@ contract TokenFactory is  Ownable {
     function createMemeToken(string memory name, string memory symbol, string memory imageUrl, string memory description) public payable returns(address) {
 
         // Define the required amount of PToken
-        uint256 requiredAmount = MEMETOKEN_CREATION_PLATFORM_FEE * DECIMALS; // Assuming PToken has 18 decimals
+        uint requiredAmount = MEMETOKEN_CREATION_PLATFORM_FEE * DECIMALS; // Assuming PToken has 18 decimals
 
         // Check if the user has approved enough tokens for the contract
         IERC20 pToken = IERC20(pTokenAddress);
@@ -118,16 +118,16 @@ contract TokenFactory is  Ownable {
         require(listedToken.fundingRaised <= MEMECOIN_FUNDING_GOAL, "Funding has already been raised");
 
         // Check to ensure there is enough supply to facilitate the purchase
-        uint256 currentSupply = memeTokenCt.totalSupply();
-        uint256 available_qty = MAX_SUPPLY - currentSupply;
-        uint256 scaled_available_qty = available_qty / DECIMALS;
-        uint256 tokenQty_scaled = tokenQty * DECIMALS;
+        uint currentSupply = memeTokenCt.totalSupply();
+        uint available_qty = MAX_SUPPLY - currentSupply;
+        uint scaled_available_qty = available_qty / DECIMALS;
+        uint tokenQty_scaled = tokenQty * DECIMALS;
 
         require(tokenQty <= scaled_available_qty, "Not enough available supply");
 
         // Calculate the cost for purchasing tokenQty tokens using the bonding curve formula
-        uint256 currentSupplyScaled = (currentSupply - INIT_SUPPLY) / DECIMALS;
-        uint256 requiredPToken = calculateCost(currentSupplyScaled, tokenQty);
+        uint currentSupplyScaled = (currentSupply - INIT_SUPPLY) / DECIMALS;
+        uint requiredPToken = calculateCost(currentSupplyScaled, tokenQty);
 
         // Check if user has approved and has enough PToken balance
         IERC20 pToken = IERC20(pTokenAddress); // Ensure `pTokenAddress` is initialized elsewhere in the contract
@@ -145,9 +145,8 @@ contract TokenFactory is  Ownable {
             address pool = _createLiquidityPool(memeTokenAddress);
 
             // Provide liquidity
-            uint256 tokenAmount = INIT_SUPPLY;
-            uint256 pTokenAmount = 60 * listedToken.fundingRaised / 100;
-            uint256 liquidity = _provideLiquidity(memeTokenAddress, tokenAmount, pTokenAmount);
+            uint pTokenAmount = 60 * listedToken.fundingRaised / 100;
+            uint liquidity = _provideLiquidity(memeTokenAddress, INIT_SUPPLY, pTokenAmount);
 
             // Burn LP tokens
             _burnLpTokens(pool, liquidity);
@@ -161,7 +160,6 @@ contract TokenFactory is  Ownable {
 
     function _createLiquidityPool(address memeTokenAddress) internal returns(address) {
         IUniswapV2Factory factory = IUniswapV2Factory(UNISWAP_V2_FACTORY_ADDRESS);
-        IUniswapV2Router01 router = IUniswapV2Router01(UNISWAP_V2_ROUTER_ADDRESS);
         address pair = factory.createPair(memeTokenAddress, pTokenAddress);
         return pair;
     }
