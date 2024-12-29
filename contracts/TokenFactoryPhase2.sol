@@ -183,12 +183,13 @@ contract TokenFactory is  Ownable {
         return 1;
     }
 
-      function withdraw() public onlyOwner{
-        uint256 balance = address(this).balance;
-        require(balance > 0, "No Ether to withdraw");
-        (bool success, ) = payable(msg.sender).call{value: balance}("");
-        require(success, "Withdrawal failed");
-    }
+  function withdrawPTOKEN() public onlyOwner {
+    uint256 balance = pToken.balanceOf(address(this));
+    require(balance > 0, "No PTOKEN to withdraw");
+
+    bool success = pToken.transfer(msg.sender, balance);
+    require(success, "PTOKEN withdrawal failed");
+}
 
 
 
