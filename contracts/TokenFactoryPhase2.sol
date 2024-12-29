@@ -39,7 +39,7 @@ contract TokenFactory is  Ownable {
 
 
     uint constant DECIMALS = 10 ** 18;
-    uint constant MAX_SUPPLY = 1000000 * DECIMALS;
+    uint constant MAX_SUPPLY = 	1000000000 * DECIMALS;
     uint constant INIT_SUPPLY = 20 * MAX_SUPPLY / 100;
 
     uint256 public constant INITIAL_PRICE = 5000000000000000;  // Initial price in wei (P0), 3.00 * 10^13
