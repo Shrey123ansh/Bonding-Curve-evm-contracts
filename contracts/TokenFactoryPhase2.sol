@@ -42,7 +42,7 @@ contract TokenFactory is  Ownable {
     uint constant MAX_SUPPLY = 1000000 * DECIMALS;
     uint constant INIT_SUPPLY = 20 * MAX_SUPPLY / 100;
 
-    uint256 public constant INITIAL_PRICE = 30000000000000;  // Initial price in wei (P0), 3.00 * 10^13
+    uint256 public constant INITIAL_PRICE = 0.005;  // Initial price in wei (P0), 3.00 * 10^13
     uint256 public constant K = 8 * 10**15;  // Growth rate (k), scaled to avoid precision loss (0.01 * 10^18)
 
     // Function to calculate the cost in wei for purchasing `tokensToBuy` starting from `currentSupply`
