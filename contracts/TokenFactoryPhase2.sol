@@ -184,6 +184,7 @@ contract TokenFactory is  Ownable {
     }
 
   function withdrawPTOKEN() public onlyOwner {
+    IERC20 pToken = IERC20(pTokenAddress); 
     uint256 balance = pToken.balanceOf(address(this));
     require(balance > 0, "No PTOKEN to withdraw");
 
