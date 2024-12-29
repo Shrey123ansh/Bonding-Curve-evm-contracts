@@ -31,11 +31,11 @@ contract TokenFactory is  Ownable {
     }
     mapping(address => memeToken) public addressToMemeTokenMapping;
 
-    uint constant MEMETOKEN_CREATION_PLATFORM_FEE = 0.0001 ether;
-    uint constant MEMECOIN_FUNDING_GOAL = 12 ether;
+    uint constant MEMETOKEN_CREATION_PLATFORM_FEE = 1000;
+    uint constant MEMECOIN_FUNDING_GOAL = 4000000 * DECIMALS;
 
-    address constant UNISWAP_V2_FACTORY_ADDRESS = 0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f;
-    address constant UNISWAP_V2_ROUTER_ADDRESS = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
+    address constant UNISWAP_V2_FACTORY_ADDRESS = 0x9fBFa493EC98694256D171171487B9D47D849Ba9;
+    address constant UNISWAP_V2_ROUTER_ADDRESS = 0x5951479fE3235b689E392E9BC6E968CE10637A52;
 
 
     uint constant DECIMALS = 10 ** 18;
@@ -82,7 +82,7 @@ contract TokenFactory is  Ownable {
     function createMemeToken(string memory name, string memory symbol, string memory imageUrl, string memory description) public payable returns(address) {
 
         // Define the required amount of PToken
-        uint256 requiredAmount = 1000 * DECIMALS; // Assuming PToken has 18 decimals
+        uint256 requiredAmount = MEMETOKEN_CREATION_PLATFORM_FEE * DECIMALS; // Assuming PToken has 18 decimals
 
         // Check if the user has approved enough tokens for the contract
         IERC20 pToken = IERC20(pTokenAddress);
@@ -107,65 +107,54 @@ contract TokenFactory is  Ownable {
         return allTokens;
     }
 
-    function buyMemeToken(address memeTokenAddress, uint tokenQty) public payable returns(uint) {
+    function buyMemeToken(address memeTokenAddress, uint256 tokenQty) public returns (uint256) {
+        // Check if memecoin is listed
+        require(addressToMemeTokenMapping[memeTokenAddress].tokenAddress != address(0), "Token is not listed");
 
-        //check if memecoin is listed
-        require(addressToMemeTokenMapping[memeTokenAddress].tokenAddress!=address(0), "Token is not listed");
-        
         memeToken storage listedToken = addressToMemeTokenMapping[memeTokenAddress];
-
-
         Token memeTokenCt = Token(memeTokenAddress);
 
-        // check to ensure funding goal is not met
+        // Check to ensure funding goal is not met
         require(listedToken.fundingRaised <= MEMECOIN_FUNDING_GOAL, "Funding has already been raised");
 
-
-        // check to ensure there is enough supply to facilitate the purchase
-        uint currentSupply = memeTokenCt.totalSupply();
-
-        uint available_qty = MAX_SUPPLY - currentSupply;
-
-
-        uint scaled_available_qty = available_qty / DECIMALS;
-        uint tokenQty_scaled = tokenQty * DECIMALS;
+        // Check to ensure there is enough supply to facilitate the purchase
+        uint256 currentSupply = memeTokenCt.totalSupply();
+        uint256 available_qty = MAX_SUPPLY - currentSupply;
+        uint256 scaled_available_qty = available_qty / DECIMALS;
+        uint256 tokenQty_scaled = tokenQty * DECIMALS;
 
         require(tokenQty <= scaled_available_qty, "Not enough available supply");
 
-        // calculate the cost for purchasing tokenQty tokens as per the exponential bonding curve formula
-        uint currentSupplyScaled = (currentSupply - INIT_SUPPLY) / DECIMALS;
-        uint requiredEth = calculateCost(currentSupplyScaled, tokenQty);
+        // Calculate the cost for purchasing tokenQty tokens using the bonding curve formula
+        uint256 currentSupplyScaled = (currentSupply - INIT_SUPPLY) / DECIMALS;
+        uint256 requiredPToken = calculateCost(currentSupplyScaled, tokenQty);
 
-        console.log("ETH required for purchasing meme tokens is ",requiredEth);
+        // Check if user has approved and has enough PToken balance
+        IERC20 pToken = IERC20(pTokenAddress); // Ensure `pTokenAddress` is initialized elsewhere in the contract
+        require(pToken.allowance(msg.sender, address(this)) >= requiredPToken, "Insufficient PToken allowance");
+        require(pToken.balanceOf(msg.sender) >= requiredPToken, "Insufficient PToken balance");
 
-        // check if user has sent correct value of eth to facilitate this purchase
-        require(msg.value >= requiredEth, "Incorrect value of ETH sent");
+        // Transfer PToken from the user to the contract
+        require(pToken.transferFrom(msg.sender, address(this), requiredPToken), "PToken transfer failed");
 
-        // Incerement the funding
-        listedToken.fundingRaised+= msg.value;
+        // Increment the funding raised
+        listedToken.fundingRaised += requiredPToken;
 
-        if(listedToken.fundingRaised >= MEMECOIN_FUNDING_GOAL){
-            // create liquidity pool
+        if (listedToken.fundingRaised >= MEMECOIN_FUNDING_GOAL) {
+            // Create liquidity pool
             address pool = _createLiquidityPool(memeTokenAddress);
-            console.log("Pool address ", pool);
 
-            // provide liquidity
-            uint tokenAmount = INIT_SUPPLY;
-            uint ethAmount = listedToken.fundingRaised;
-            uint liquidity = _provideLiquidity(memeTokenAddress, tokenAmount, ethAmount);
-            console.log("UNiswap provided liquidty ", liquidity);
+            // Provide liquidity
+            uint256 tokenAmount = INIT_SUPPLY;
+            uint256 pTokenAmount = 60 * listedToken.fundingRaised / 100;
+            uint256 liquidity = _provideLiquidity(memeTokenAddress, tokenAmount, pTokenAmount);
 
-            // burn lp token
+            // Burn LP tokens
             _burnLpTokens(pool, liquidity);
-
         }
 
-        // mint the tokens
+        // Mint the tokens to the buyer
         memeTokenCt.mint(tokenQty_scaled, msg.sender);
-
-        console.log("User balance of the tokens is ", memeTokenCt.balanceOf(msg.sender));
-
-        console.log("New available qty ", MAX_SUPPLY - memeTokenCt.totalSupply());
 
         return 1;
     }
@@ -173,7 +162,7 @@ contract TokenFactory is  Ownable {
     function _createLiquidityPool(address memeTokenAddress) internal returns(address) {
         IUniswapV2Factory factory = IUniswapV2Factory(UNISWAP_V2_FACTORY_ADDRESS);
         IUniswapV2Router01 router = IUniswapV2Router01(UNISWAP_V2_ROUTER_ADDRESS);
-        address pair = factory.createPair(memeTokenAddress, router.WETH());
+        address pair = factory.createPair(memeTokenAddress, pTokenAddress);
         return pair;
     }
 
