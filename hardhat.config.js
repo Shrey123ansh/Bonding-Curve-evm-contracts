@@ -1,4 +1,4 @@
-require('dotenv').config()
+require("dotenv").config();
 require("@nomicfoundation/hardhat-toolbox");
 
 /** @type import('hardhat/config').HardhatUserConfig */
@@ -10,6 +10,6 @@ module.exports = {
         url: process.env.MAINNET_BNB_RPC_URL,
       },
       chainId: 1,
-    }
-  }
+    },
+  },
 };

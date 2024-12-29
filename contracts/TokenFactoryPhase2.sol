@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.24;
 
@@ -7,10 +7,9 @@ import "hardhat/console.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router01.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-
-contract TokenFactory {
-
+contract TokenFactory is  Ownable {
 
     struct memeToken {
         string name;
@@ -24,21 +23,27 @@ contract TokenFactory {
 
     address[] public memeTokenAddresses;
 
+    address public pTokenAddress;
+
+    constructor(address _pTokenAddress) Ownable(msg.sender) {
+        require(_pTokenAddress != address(0), "Invalid PToken address");
+        pTokenAddress = _pTokenAddress;
+    }
     mapping(address => memeToken) public addressToMemeTokenMapping;
 
-    uint constant MEMETOKEN_CREATION_PLATFORM_FEE = 0.00001 ether; //Note change into 0.1 ether
-    uint constant MEMECOIN_FUNDING_GOAL = 0.1 ether; //Note change into 100 ether
+    uint constant MEMETOKEN_CREATION_PLATFORM_FEE = 0.0001 ether;
+    uint constant MEMECOIN_FUNDING_GOAL = 12 ether;
 
-    address constant UNISWAP_V2_FACTORY_ADDRESS = 0x9fBFa493EC98694256D171171487B9D47D849Ba9;
-    address constant UNISWAP_V2_ROUTER_ADDRESS = 0x5951479fE3235b689E392E9BC6E968CE10637A52;
+    address constant UNISWAP_V2_FACTORY_ADDRESS = 0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f;
+    address constant UNISWAP_V2_ROUTER_ADDRESS = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
 
 
     uint constant DECIMALS = 10 ** 18;
-    uint constant MAX_SUPPLY = 1000000000 * DECIMALS;
+    uint constant MAX_SUPPLY = 1000000 * DECIMALS;
     uint constant INIT_SUPPLY = 20 * MAX_SUPPLY / 100;
 
-    uint256 public constant INITIAL_PRICE = 10000000000;  // Initial price in wei (P0), 1.00 * 10^10 
-    uint256 public constant K = 8 * 10**8;  // Growth rate (k), scaled to avoid precision loss (0.01 * 10^18)
+    uint256 public constant INITIAL_PRICE = 30000000000000;  // Initial price in wei (P0), 3.00 * 10^13
+    uint256 public constant K = 8 * 10**15;  // Growth rate (k), scaled to avoid precision loss (0.01 * 10^18)
 
     // Function to calculate the cost in wei for purchasing `tokensToBuy` starting from `currentSupply`
     function calculateCost(uint256 currentSupply, uint256 tokensToBuy) public pure returns (uint256) {
@@ -76,8 +81,16 @@ contract TokenFactory {
 
     function createMemeToken(string memory name, string memory symbol, string memory imageUrl, string memory description) public payable returns(address) {
 
-        //should deploy the meme token, mint the initial supply to the token factory contract
-        require(msg.value>= MEMETOKEN_CREATION_PLATFORM_FEE, "fee not paid for memetoken creation");
+        // Define the required amount of PToken
+        uint256 requiredAmount = 1000 * DECIMALS; // Assuming PToken has 18 decimals
+
+        // Check if the user has approved enough tokens for the contract
+        IERC20 pToken = IERC20(pTokenAddress);
+        require(pToken.allowance(msg.sender, address(this)) >= requiredAmount, "Insufficient allowance for PToken");
+
+        // Transfer the required amount of PToken from the sender to the contract
+        require(pToken.transferFrom(msg.sender, address(this), requiredAmount), "PToken transfer failed");
+
         Token ct = new Token(name, symbol, INIT_SUPPLY);
         address memeTokenAddress = address(ct);
         memeToken memory newlyCreatedToken = memeToken(name, symbol, description, imageUrl, 0, memeTokenAddress, msg.sender);
@@ -110,10 +123,8 @@ contract TokenFactory {
 
         // check to ensure there is enough supply to facilitate the purchase
         uint currentSupply = memeTokenCt.totalSupply();
-        console.log("Current supply of token is ", currentSupply);
-        console.log("Max supply of token is ", MAX_SUPPLY);
+
         uint available_qty = MAX_SUPPLY - currentSupply;
-        console.log("Qty available for purchase ",available_qty);
 
 
         uint scaled_available_qty = available_qty / DECIMALS;
@@ -183,13 +194,13 @@ contract TokenFactory {
         return 1;
     }
 
-
-     function withdraw() external {
+      function withdraw() public onlyOwner{
         uint256 balance = address(this).balance;
         require(balance > 0, "No Ether to withdraw");
         (bool success, ) = payable(msg.sender).call{value: balance}("");
         require(success, "Withdrawal failed");
     }
+
 
 
 }
