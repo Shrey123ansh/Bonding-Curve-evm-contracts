@@ -4,10 +4,26 @@ pragma solidity ^0.8.24;
 
 import "./Token.sol";
 import "hardhat/console.sol";
-import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
-import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router01.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+
+interface IUniswapV2Factory {
+    function createPair(address tokenA, address tokenB) external returns (address pair);
+    function getPair(address tokenA, address tokenB) external view returns (address pair);
+}
+
+interface IUniswapV2Router {
+    function addLiquidity(
+        address tokenA,
+        address tokenB,
+        uint amountADesired,
+        uint amountBDesired,    
+        uint amountAMin,
+        uint amountBMin,
+        address to,
+        uint deadline
+    ) external returns (uint amountA, uint amountB, uint liquidity);
+}
 
 contract TokenFactory is  Ownable {
 
@@ -39,7 +55,7 @@ contract TokenFactory is  Ownable {
 
 
     uint constant DECIMALS = 10 ** 18;
-    uint constant MAX_SUPPLY = 	1000000000 * DECIMALS;
+    uint constant MAX_SUPPLY = 	4000000000 * DECIMALS;
     uint constant INIT_SUPPLY = 20 * MAX_SUPPLY / 100;
 
     uint256 public constant INITIAL_PRICE = 5000000000000000;  // Initial price in wei (P0), 3.00 * 10^13
@@ -134,6 +150,7 @@ contract TokenFactory is  Ownable {
         require(pToken.allowance(msg.sender, address(this)) >= requiredPToken, "Insufficient PToken allowance");
         require(pToken.balanceOf(msg.sender) >= requiredPToken, "Insufficient PToken balance");
 
+        // console.log(requiredPToken);
         // Transfer PToken from the user to the contract
         require(pToken.transferFrom(msg.sender, address(this), requiredPToken), "PToken transfer failed");
 
@@ -142,14 +159,14 @@ contract TokenFactory is  Ownable {
 
         if (listedToken.fundingRaised >= MEMECOIN_FUNDING_GOAL) {
             // Create liquidity pool
-            address pool = _createLiquidityPool(memeTokenAddress);
+            _createLiquidityPool(memeTokenAddress);
 
             // Provide liquidity
             uint pTokenAmount = 60 * listedToken.fundingRaised / 100;
-            uint liquidity = _provideLiquidity(memeTokenAddress, INIT_SUPPLY, pTokenAmount);
+            _provideLiquidity(memeTokenAddress, INIT_SUPPLY, pTokenAmount);
 
             // Burn LP tokens
-            _burnLpTokens(pool, liquidity);
+            // _burnLpTokens(pool, liquidity);
         }
 
         // Mint the tokens to the buyer
@@ -164,13 +181,23 @@ contract TokenFactory is  Ownable {
         return pair;
     }
 
-    function _provideLiquidity(address memeTokenAddress, uint tokenAmount, uint ethAmount) internal returns(uint){
+    function _provideLiquidity(address memeTokenAddress, uint atokenAmount, uint pTokenAmount) internal returns(uint){
         Token memeTokenCt = Token(memeTokenAddress);
-        memeTokenCt.approve(UNISWAP_V2_ROUTER_ADDRESS, tokenAmount);
-        IUniswapV2Router01 router = IUniswapV2Router01(UNISWAP_V2_ROUTER_ADDRESS);
-        (,, uint liquidity) = router.addLiquidityETH{
-            value: ethAmount
-        }(memeTokenAddress, tokenAmount, tokenAmount, ethAmount, address(this), block.timestamp);
+        memeTokenCt.mint(atokenAmount, address(this));
+        memeTokenCt.approve(UNISWAP_V2_ROUTER_ADDRESS, atokenAmount);
+         memeTokenCt.approve(UNISWAP_V2_ROUTER_ADDRESS, pTokenAmount);
+        
+        IUniswapV2Router router = IUniswapV2Router(UNISWAP_V2_ROUTER_ADDRESS);
+        (,, uint liquidity) = router.addLiquidity(
+            memeTokenAddress,
+            pTokenAddress,
+            atokenAmount,
+            pTokenAmount,
+            0, // amountAMin
+            0, // amountBMin
+            address(this), // to
+            block.timestamp// deadline
+        );
         return liquidity;
     }
 
